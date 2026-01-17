@@ -1,0 +1,18 @@
+/* 
+  sends two sequences to the synth in the port 128:0, through  midi channels 1 and 2
+*/
+
+tempo(60)
+seq1=openPort("seq1")
+connectOut(seq1,128,0)
+d1=channel(seq1,1)
+d2=channel(seq1,2)
+
+d1<</o(7) p(8)/                   //octave 7 program change 8 
+d2<</ t(1,2) o(5) p(5)/          //eigth notes
+
+repeats=8
+
+d1<</c d e z  f  / * repeats
+d2<</ e d c bv a / * (repeats/2)
+

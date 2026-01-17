@@ -1,0 +1,16 @@
+
+tempo(60)
+seq1=openPort("seq1")
+connectOut(seq1,128,0)
+pianoLeft=channel(seq1,1)
+pianoRight=channel(seq1,1)
+
+theme1 = "/d e f g a b-    c+ b- a g f e/"
+beginning = theme1 +   " + /f_  a_ d^_    gv_ c^+_ e_/"
+
+pianoLeft<< / t(1,2)  z__ z__  t(1,4) o(3) <beginning>/
+
+
+pianoRight<</ t(1,4)  o(4) <beginning>  <theme1>/
+
+

@@ -1,0 +1,19 @@
+seq1=openPort("seq1")
+tempo(60)
+connectOut(seq1,128,0)
+conga=channel(seq1,10)
+clave=channel(seq1,10)
+
+repeats=4
+
+pattern = "mmSmmmoo" * 2
+tumbao  = /{o=/M(63)/; m=/M(54)/;S=/M(37)/ }  <pattern>/
+conga << /t(1,4)/
+conga << tumbao * repeats
+
+clave<< /t(1,4)/
+clave<< /{x=/M(77)/} "..x.x...  x..x..x."/ * repeats
+
+
+
+

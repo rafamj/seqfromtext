@@ -1,0 +1,10 @@
+/* 
+  sends a c major scale to the synth in the port 128:0, through  midi channel 1
+*/
+
+tempo(60)
+seq1=openPort("seq1")
+connectOut(seq1,128,0)
+d1=channel(seq1,1)
+d1<</c d e f g a b c^/
+

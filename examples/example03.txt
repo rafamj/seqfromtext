@@ -1,0 +1,19 @@
+tempo(72)
+seq1=openPort("seq1")
+connectOut(seq1,128,0)
+snare=channel(seq1,10)
+flute=channel(seq1,1)
+
+
+repeats=4
+pattern = /{x=/M(38)/} "x..xxx x..xxx x..x..   x..xxx x..xxx xxxxxx" /
+snare << /t(1,6) cc(10,0) /
+snare << pattern * 2 + /:a/
+snare << pattern * repeats
+snare << /M(38)/
+
+flute << / t(1,4) p(73) cc(10,127) o(6) /
+flute << / w(snare:a)/         //wait for the label :a
+flute << / c_____ bv c^ d c bv a     c^_ c av c^_____ bv c^      av g e f g____/
+flute << / f e d e f g a g________  a b a g f e d/
+flute << / e d c___ c d e_ f_ d___ g_________ /

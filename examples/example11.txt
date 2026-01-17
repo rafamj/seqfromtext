@@ -1,0 +1,23 @@
+/*
+Neutron 
+*/
+seq1=openPort("seq1")
+connectOut(seq1,20,0)
+connectIn(seq1,20,0)
+d1=sysExChannel(seq1)
+
+ID = 0 
+
+SoftwareVersionRequest = / X(F0 00 20 32 28 <ID> 73 F7) /
+
+def SoftwareVersionResponse(b,len)  {
+  printf("len %d ID %x. ",len, b[5])
+  printf("Comms protocol version %hhX. ",b[7])
+  printf("Software version %c%c%c%c\n", b[8], b[9], b[10], b[11], b[12])
+}
+
+
+d1<< SoftwareVersionRequest
+
+waitSysEx(seq1, SoftwareVersionResponse)
+
