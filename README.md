@@ -1,2 +1,2 @@
 usage:
-./seqfromtext <file name>
+./seqfromtext <<file name>>
