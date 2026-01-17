@@ -1,0 +1,2 @@
+usage:
+./seqfromtext <file name>
