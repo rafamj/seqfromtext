@@ -57,9 +57,7 @@ Event *Sequence::nextEvent() {
     if(ev->type==Event::LOOP_START) {
       start_loop=index;
       num_repeats=0;
-      printf("start loop %ld\n",start_loop);
     } else if(ev->type==Event::LOOP_END) {
-      printf("end loop %ld jump to %ld repeats %d ev->repeats %d\n",index,start_loop,num_repeats,ev->repeats);
       if(num_repeats==0) {
         num_repeats=ev->repeats;
       } else if (num_repeats!=-1) {// -1 -> break the loop	
@@ -69,7 +67,6 @@ Event *Sequence::nextEvent() {
         index=start_loop;
       }
     } else if(num_repeats==2 && ev->type==Event::FIRST_ENDING) { //jump to end loop
-      printf("jump to end\n");
       while(ev->type!=Event::LOOP_END) {
         index++;
         ev=events[index];

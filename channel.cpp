@@ -18,7 +18,6 @@ void Channel::addWait(string label, Channel *channel){
 }
 
 void Channel::wakeUp(snd_seq_tick_time_t t){
-  printf("wakeUp\n");
   tick=t;
   closed=false;
 }

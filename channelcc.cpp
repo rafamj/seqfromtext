@@ -13,15 +13,12 @@ shape=0;
 length=0;
 index=0;
 cc_ev->CC.value=0;
-printf("creado ChannelCC\n");
 }
 
 Event *ChannelCC::nextEvent(){
-  printf("nextEvent length %ld\n", length);
   if(length==0) {
     Event *event=::Channel::nextEvent();
     if(!event) return 0;
-    printf("ChannelCC::nextEvent type %d\n",event->type);
     if(event->type==Event::SWEEP){
       procesSweep(event);
       return (Event *)1;
@@ -69,7 +66,7 @@ Event *ChannelCC::nextEvent(){
       } else {
         cc_ev->CC.value=v1-(v1-v2)*index/(length-1);
       }
-      printf("cc_ev->CC.value %d\n",cc_ev->CC.value);
+      //printf("cc_ev->CC.value %d\n",cc_ev->CC.value);
     if(index++>=length-1){
       length=0;
     }
@@ -82,29 +79,30 @@ void ChannelCC::procesSweep(Event *event) {
   string l2=event->sweep.label2;
   v1=event->sweep.value1;
   v2=event->sweep.value2;
-  length=vc->seq.length(l1, l2)*incTick(1)/vc->incTick(1);
+  length=vc->seq.length(l1, l2)*vc->incTick(1)/incTick(1);
   vc->addWait(l1,this);
   closed=true;
   index=0;
-  printf("procesSweep v1 %d v2 %d length %ld\n",v1,v2,length);
 }
 
 void ChannelCC::processLFO(Event *event) {
   length=MAX_LENGTH;
+  closed=false;
   v2=0;
   v1=event->Lfo.beats*TICKS_PER_QUARTER/event->Lfo.div;
   shape=event->Lfo.shape;
 }
 
 void ChannelCC::sendControlChange(Event *event,snd_seq_event_t *ev){
-    printf("send SWEEP controller channel %d control %d value %d tick %d\n",midiChannel, event->CC.control,event->CC.value,tick);
+    //printf("send SWEEP controller channel %d control %d value %d tick %d\n",midiChannel, event->CC.control,event->CC.value,tick);
     snd_seq_ev_set_controller(ev,midiChannel, event->CC.control,event->CC.value);
     //printf("cc tick1 %u\n",tick);tick+=vc->incTick(1);printf("cc tick2 %u\n",tick);
-    printf("cc tick1 %u\n",tick);tick+=incTick(1);printf("cc tick2 %u\n",tick);
+    //printf("cc tick1 %u\n",tick);tick+=incTick(1);printf("cc tick2 %u\n",tick);
+    tick+=incTick(1);
+    //tick+=vc->incTick(1);
 }
  
 void ChannelCC::processEvent(Event *event,snd_seq_event_t *ev){
-  printf("processEvent channelCC\n");
   if(vc->closed) { closed=true; return;}
   switch(event->type) {
     case Event::LFO: processLFO(event);break;

@@ -259,7 +259,6 @@ vector<Event *>  *Parser::parse_sequence() {
 	  result->push_back(new Event(v[0]->integer,v[1]->integer));
 	} else if(note=='D' && toupper(c1)=='D') {   // SysEx Decimal
           vector<uint8_t> buffer=parseSysEx(10);
-	  printf("Sequence::insertSysEx ");
           result->push_back(new Event(new SysEx(&buffer[0], buffer.size())));
 	} else if(note=='D' && toupper(c1)=='I') {   // SysEx Decimal
 	  char c1=lex.getChar();
@@ -287,7 +286,6 @@ vector<Event *>  *Parser::parse_sequence() {
       }
         Event *ev= new Event(v[0]->FL.channel,v[0]->FL.label);
 	ev->type=Event::JUMP;
-      printf("jump %d %s\n",v[0]->integer,v[1]->str.c_str());
         result->push_back(ev);
     } else if(note=='K') { //CLOCK /////
       char c1=lex.getChar();
@@ -312,7 +310,6 @@ vector<Event *>  *Parser::parse_sequence() {
 	ev->programNumber=v[0]->integer-1;
 	result->push_back(ev);
     } else if(note=='S') { 
-      printf("Sweep\n");
       lex.expect("(");
       vector<Value *> v=readListOfValues(')');
       if(v.size()!=4 || v[0]->type!=Value::LABEL||v[1]->type!=Value::LABEL || v[2]->type!=Value::INTEGER || v[3]->type!=Value::INTEGER ) {
@@ -365,7 +362,6 @@ vector<Event *>  *Parser::parse_sequence() {
     } else if(c=='|') { 
         char c1=lex.getChar();
         if(c1==':') {  //start loop
-          printf("start loop\n");
           result->push_back(new Event());
 	} else if (c1=='|') {          // first ending
 	  lex.unGet();
@@ -375,7 +371,6 @@ vector<Event *>  *Parser::parse_sequence() {
       char c1=lex.getChar();
       if(c1=='|') {
         int num_repeats=0;
-        printf("end loop\n");
         jumpBlanks();
 	c=lex.getChar();
         while(isdigit(c)) {
@@ -383,7 +378,6 @@ vector<Event *>  *Parser::parse_sequence() {
          c=lex.getChar();
         }
 	lex.unGet();
-	printf("num repeats %d\n",num_repeats);
         result->push_back(new Event(num_repeats));
       } else if(isalpha(c1)) {
         lex.unGet();
