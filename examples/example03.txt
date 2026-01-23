@@ -1,5 +1,5 @@
 tempo(72)
-seq1=openPort("seq1")
+seq1=openOutPort("seq1")
 connectOut(seq1,128,0)
 snare=channel(seq1,10)
 flute=channel(seq1,1)

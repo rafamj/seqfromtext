@@ -1,0 +1,18 @@
+//using continue with the readline lib
+//exit with .
+
+seq1=openOutPort("seq1")
+connectOut(seq1,128,0)
+
+tempo(60)
+d1=channel(seq1,1)
+d2=channel(seq1,2)
+        
+
+d1<< / t(2,1) cc(10,0) / + /[d f a c^] [ev g b d^] :a z / * 6
+
+d2<< / cc(10,127) /
+
+continue
+
+add_history("d2<</ w(d1:a) O(2) c d e f g a b c^/ * 4")

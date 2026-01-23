@@ -1,4 +1,4 @@
-seq1=openPort("seq1")
+seq1=openOutPort("seq1")
 tempo(60)
 connectOut(seq1,128,0)
 conga=channel(seq1,10)

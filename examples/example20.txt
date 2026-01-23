@@ -1,5 +1,6 @@
-seq1=openPort("seq1")
+seq1=openOutPort("seq1")
 connectOut(seq1,128,0)
+
 tempo(60)
 d1=channel(seq1,1)
 pan=channelCC(d1,10)

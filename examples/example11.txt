@@ -1,9 +1,10 @@
 /*
 Neutron 
 */
-seq1=openPort("seq1")
+seq1=openOutPort("seq1")
+seq2=openOutPort("seq2")
 connectOut(seq1,20,0)
-connectIn(seq1,20,0)
+connectIn(seq2,20,0)
 d1=sysExChannel(seq1)
 
 ID = 0 
@@ -19,5 +20,5 @@ def SoftwareVersionResponse(b,len)  {
 
 d1<< SoftwareVersionRequest
 
-waitSysEx(seq1, SoftwareVersionResponse)
+waitSysEx(seq2, SoftwareVersionResponse)
 

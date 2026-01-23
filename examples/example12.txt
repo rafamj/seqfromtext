@@ -1,9 +1,10 @@
 /*
 Identity request
 */
-seq1=openPort("seq1")
+seq1=openOutPort("seq1")
+seq2=openInPort("seq2")
 connectOut(seq1,20,0)
-connectIn(seq1,20,0)
+connectIn(seq2,20,0)
 d1=sysExChannel(seq1)
 
 ID = 0x7F //Disregard ID
@@ -15,5 +16,5 @@ def  ident(buffer,len) {
   printf("model %x %x family member %d %d ", buffer[6],buffer[7],buffer[8],buffer[9])
   printf("software revision %c%c%c%c \n",buffer[10], buffer[11], buffer[12], buffer[13])
 }
-waitSysEx(seq1, ident)
+waitSysEx(seq2, ident)
 

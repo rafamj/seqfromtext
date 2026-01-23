@@ -1,0 +1,27 @@
+/*
+  send some notes to qtractor
+*/
+
+tempo(200)
+
+seq1=openOutPort("seq1")
+seq2=openInPort("seq1")
+
+connectOut(seq1,128,2) //control port of qtractor
+connectOut(seq1,128,0)
+connectIn(seq2,128,2)
+
+
+
+d1=channel(seq1,1)
+
+d1<</z___ / * 10   + /:end/
+
+
+time=timeChannel(seq1)
+
+time<< start()   + /K1/
+
+
+time<< /w(d1:end) / + stop()
+
