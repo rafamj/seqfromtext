@@ -20,7 +20,7 @@ class Sequence{
   Sequence(Event *ev);
   Channel *owner;
   void addSequence(vector<Event *> *s);
-  Event *peekNextEvent(){return events[index];}
+  Event *peekNextEvent();
   Event *nextEvent();
   void addWait(string label, Channel *channel);
   void jump(string label);

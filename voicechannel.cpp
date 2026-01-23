@@ -14,7 +14,7 @@ VoiceChannel::VoiceChannel(int p, int mchan):MidiChannel(p,mchan) {
 void VoiceChannel::sendNote(Event *event,snd_seq_event_t *ev){
     int next=event->note->duration*TICKS_PER_QUARTER*numerator/division;
     int duration=next*gate/100;
-    //printf("send  channel %d note %d velocity %d duration %d tick %u\n",midiChannel-1, event->note->note + transpose, volume, duration,tick);
+    //printf("send  channel %d note %d velocity %d duration %d tick %u\n",midiChannel, event->note->note + transpose, volume, duration,tick);
     snd_seq_ev_set_note(ev, midiChannel, event->note->note + transpose, volume, duration);
     tick += next;
 }

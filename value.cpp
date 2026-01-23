@@ -14,8 +14,8 @@ void Value::print() {
     case FUNCTION: printf("FUNCTION \n");break;
     case ERROR: printf("ERROR\n");break;
     case CHANNEL: printf("CHANNEL \n");break;
-    //case VOICECHANNEL: printf("VOICECHANNEL \n");break;
-    case PORT: printf("PORT %d\n",integer);break;
+    case OUTPORT: printf("PORT %d\n",integer);break;
+    case INPORT: printf("PORT %d\n",integer);break;
     case DICT: printf("DICT\n");dictionary->print();break;
     case LABEL: printf("LABEL :%s\n",str.c_str());break;
     case ARRAY: printf("ARRAY \n");break;

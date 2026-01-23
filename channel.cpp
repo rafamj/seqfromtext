@@ -6,6 +6,7 @@ Channel::Channel(int p) {
   port=p;
   tick=0;
   closed=false;
+  waiting=false;
   seq.owner=this;
 }
 
@@ -19,12 +20,23 @@ void Channel::addWait(string label, Channel *channel){
 
 void Channel::wakeUp(snd_seq_tick_time_t t){
   tick=t;
-  closed=false;
+  waiting=false;
 }
 
 void Channel::jump(string label){
   seq.jump(label);
 }
+
+Event *Channel::peekNextEvent(){
+  Event *ev=seq.peekNextEvent();
+
+  if (ev) {
+    return ev;
+  } else {
+    closed=true;
+    return 0;
+  }
+}  
 
 Event *Channel::nextEvent() {
     Event *ev=seq.nextEvent();
@@ -33,14 +45,16 @@ Event *Channel::nextEvent() {
         ev->Wait.channel->jump(ev->Wait.label);
       } else if(ev->type==Event::WAIT) {
         ev->Wait.channel->addWait(ev->Wait.label,this);
-        closed=true;
+        waiting=true;
 	return (Event *)1;
       }
       ev=seq.nextEvent();
     }
+    
     if(!ev) {
-      closed=true;
+      closed=true; //
     }
+    
     return ev;
   }
 

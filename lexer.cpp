@@ -119,7 +119,7 @@ string Lexer::readNumber(char c) {
 string Lexer::readString(char term) {
   char c=getChar();
   string s;
-  while(c!=term) {
+  while(c!=term && c>=32 && c<=0x7f) {
     if(c=='\\') {
       char c1=getChar();
       switch(c1) {
@@ -131,6 +131,9 @@ string Lexer::readString(char term) {
     }
     s = s + c;
     c=getChar();
+  }
+  if(c!=term) {
+    printError("Unterminated string\n");
   }
   return s;
 }

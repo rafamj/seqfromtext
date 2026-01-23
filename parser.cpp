@@ -4,6 +4,10 @@
 #include "sysfunction.h"
 #include "sequencer.h"
 
+extern "C" {
+  extern void add_history (const char *);
+}
+
 static int note2midi(char note, int octave, int alt) {
   int n;
 
@@ -35,21 +39,23 @@ Parser::Parser(Sequencer *s, char *fname):lex(fname),table() {
 void Parser::init(){
   octave=4;
   seq->continueFlag=false;
-  table.insert("openPort", new Value(new SysFunction(SysFunction::OPEN, vector<Value::Type>({Value::STRING}))));
-  table.insert("connectOut", new Value(new SysFunction(SysFunction::CONNECTOUT, vector<Value::Type>({Value::PORT, Value::INTEGER, Value::INTEGER}))));
-  table.insert("connectIn", new Value(new SysFunction(SysFunction::CONNECTIN, vector<Value::Type>({Value::PORT, Value::INTEGER, Value::INTEGER}))));
+  table.insert("openOutPort", new Value(new SysFunction(SysFunction::OPENOUT, vector<Value::Type>({Value::STRING}))));
+  table.insert("openInPort", new Value(new SysFunction(SysFunction::OPENIN, vector<Value::Type>({Value::STRING}))));
+  table.insert("connectOut", new Value(new SysFunction(SysFunction::CONNECTOUT, vector<Value::Type>({Value::OUTPORT, Value::INTEGER, Value::INTEGER}))));
+  table.insert("connectIn", new Value(new SysFunction(SysFunction::CONNECTIN, vector<Value::Type>({Value::INPORT, Value::INTEGER, Value::INTEGER}))));
   table.insert("tempo",new Value(new SysFunction(SysFunction::TEMPO,vector<Value::Type>({Value::INTEGER}))));
   table.insert("note",new Value(new SysFunction(SysFunction::NOTE, vector<Value::Type>({Value::INTEGER, Value::INTEGER}))));
   table.insert("pad",new Value(new SysFunction(SysFunction::PAD, vector<Value::Type>({Value::STRING, Value::INTEGER}))));
-  table.insert("channel",new Value(new SysFunction(SysFunction::MIDI_CHANNEL, vector<Value::Type>({Value::PORT, Value::INTEGER}))));
-  table.insert("timeChannel",new Value(new SysFunction(SysFunction::TIME_CHANNEL, vector<Value::Type>({Value::PORT}))));
-  table.insert("sysExChannel",new Value(new SysFunction(SysFunction::SYSEX_CHANNEL, vector<Value::Type>({Value::PORT}))));
+  table.insert("channel",new Value(new SysFunction(SysFunction::MIDI_CHANNEL, vector<Value::Type>({Value::OUTPORT, Value::INTEGER}))));
+  table.insert("timeChannel",new Value(new SysFunction(SysFunction::TIME_CHANNEL, vector<Value::Type>({Value::OUTPORT}))));
+  table.insert("sysExChannel",new Value(new SysFunction(SysFunction::SYSEX_CHANNEL, vector<Value::Type>({Value::OUTPORT}))));
   table.insert("channelCC",new Value(new SysFunction(SysFunction::CHANNELCC, vector<Value::Type>({Value::CHANNEL, Value::INTEGER}))));
   table.insert("wait",new Value(new SysFunction(SysFunction::WAIT, vector<Value::Type>({Value::INTEGER}))));
   table.insert("start",new Value(new SysFunction(SysFunction::START, vector<Value::Type>())));
   table.insert("stop",new Value(new SysFunction(SysFunction::STOP, vector<Value::Type>())));
   table.insert("printf",new Value(new SysFunction(SysFunction::PRINTF, vector<Value::Type>())));
-  table.insert("waitSysEx",new Value(new SysFunction(SysFunction::WAITSYSEX, vector<Value::Type>({Value::PORT, Value::FUNCTION}))));
+  table.insert("waitSysEx",new Value(new SysFunction(SysFunction::WAITSYSEX, vector<Value::Type>({Value::INPORT, Value::FUNCTION}))));
+  table.insert("add_history",new Value(new SysFunction(SysFunction::ADDHISTORY, vector<Value::Type>({Value::STRING}))));
   table.insert("_Dict",new Value(new Table()));
 }
 
@@ -400,8 +406,12 @@ vector<Event *>  *Parser::parse_sequence() {
 
 vector<Value *>Parser::readListOfValues(char terminator) {
   vector<Value *> result;
-  Token t;
+  Token t=lex.peekToken();
   char separator[3];
+  if(t.is(terminator)) { //0 values
+    lex.consumeToken();
+    return result;
+  }
 
   separator[0]=',';
   separator[1]=terminator;
@@ -612,7 +622,8 @@ Value *Parser::execSysFunction(SysFunction *sf) {
     }
   }
   switch(sf->type) {
-    case SysFunction::OPEN: return new Value(seq->createPort(v[0]->str.c_str()), Value::PORT);
+    case SysFunction::OPENOUT: return new Value(seq->createOutPort(v[0]->str.c_str()), Value::OUTPORT);
+    case SysFunction::OPENIN: return new Value(seq->createInPort(v[0]->str.c_str()), Value::INPORT);
     case SysFunction::CONNECTOUT: seq->connect(true, v[0]->integer,v[1]->integer,v[2]->integer);break;
     case SysFunction::CONNECTIN: seq->connect(false, v[0]->integer,v[1]->integer,v[2]->integer);break;
     case SysFunction::TEMPO: seq->set_tempo(v[0]->integer);break;
@@ -634,7 +645,8 @@ Value *Parser::execSysFunction(SysFunction *sf) {
     case SysFunction::WAIT: return new Value(new vector<Event *>(1,new Event(new Silence(v[0]->integer*TICKS_PER_QUARTER))));
     case SysFunction::START: return new Value(new vector<Event *>(1,new Event(Event::START)));
     case SysFunction::STOP: return new Value(new vector<Event *>(1,new Event(Event::STOP)));
-    case SysFunction::WAITSYSEX: printf("function %p\n",v[1]->function); seq->waitList.push_back(v[1]->function);break;
+    case SysFunction::WAITSYSEX:seq->waitList.push_back(v[1]->function);break;
+    case SysFunction::ADDHISTORY:add_history(v[0]->str.c_str());break;
     default: return new Value(string("error"),Value::UNDEF);
   }
   return new Value(string("error"),Value::UNDEF);

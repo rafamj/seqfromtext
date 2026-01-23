@@ -15,7 +15,16 @@ index=0;
 cc_ev->CC.value=0;
 }
 
+Event *ChannelCC::peekNextEvent(){
+  if(vc->closed) { 
+    closed=true; 
+    return 0;
+  }
+  return cc_ev;
+}
+
 Event *ChannelCC::nextEvent(){
+  if(vc->closed) { closed=true; return 0;}
   if(length==0) {
     Event *event=::Channel::nextEvent();
     if(!event) return 0;
@@ -81,16 +90,17 @@ void ChannelCC::procesSweep(Event *event) {
   v2=event->sweep.value2;
   length=vc->seq.length(l1, l2)*vc->incTick(1)/incTick(1);
   vc->addWait(l1,this);
-  closed=true;
+  waiting=true;
   index=0;
 }
 
 void ChannelCC::processLFO(Event *event) {
   length=MAX_LENGTH;
-  closed=false;
+  //waiting=false;
   v2=0;
   v1=event->Lfo.beats*TICKS_PER_QUARTER/event->Lfo.div;
   shape=event->Lfo.shape;
+  //printf("LFO v1 %d shape %d\n",v1,shape);
 }
 
 void ChannelCC::sendControlChange(Event *event,snd_seq_event_t *ev){
@@ -103,7 +113,7 @@ void ChannelCC::sendControlChange(Event *event,snd_seq_event_t *ev){
 }
  
 void ChannelCC::processEvent(Event *event,snd_seq_event_t *ev){
-  if(vc->closed) { closed=true; return;}
+  //printf("processEvent %d\n",event->type);
   switch(event->type) {
     case Event::LFO: processLFO(event);break;
     case Event::SWEEP:  procesSweep(event);break;

@@ -25,8 +25,8 @@ class Sequencer {
    vector<int> port_in_id;
    vector<int> port_out_id;
    struct pollfd *pfd;
-   size_t remainingChannels;
-   Channel *selectNextChannel(snd_seq_tick_time_t &min_tick);
+   //size_t remainingChannels;
+   Channel *selectNextChannel();
    int queueEventsCount();
   public:
   Parser *parser;
@@ -34,7 +34,8 @@ class Sequencer {
   bool continueFlag;
   Sequencer();
    void open_seq(const char * device, const  char *name);
-   int createPort(const char *name);
+   int createOutPort(const char *name);
+   int createInPort(const char *name);
    void connect(bool out, int port_out, int client, int port);
    void set_tempo(int bpm);
    snd_seq_tick_time_t get_tick();
@@ -49,7 +50,7 @@ class Sequencer {
    void midi_action();
    void start_queue();
    void loop();
-   static void sigterm_exit(int sig); 
+   void stop();
 };
 #endif
 

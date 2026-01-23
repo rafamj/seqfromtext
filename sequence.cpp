@@ -23,7 +23,8 @@ void Sequence::addSequence(vector<Event *> *s){
       if(!l) {
         labels.push_back(new Label(ev->label->label,index));
       } else {
-        printf("Error label %s redefined\n",ev->label->label.c_str());
+        l->position=index;
+        //printf("Error label %s redefined\n",ev->label->label.c_str());
       }
     }
     events.push_back(ev);
@@ -31,6 +32,15 @@ void Sequence::addSequence(vector<Event *> *s){
   }
   //events.insert(events.end(),s->begin(),s->end());
 }
+
+Event *Sequence::peekNextEvent(){
+  if(index<events.size()) {
+    return events[index];
+  } else {
+    return 0;
+  }
+}
+
 
 Label *Sequence::searchLabel(string name) {
     for(size_t i=0; i<labels.size(); i++) {
@@ -76,7 +86,7 @@ Event *Sequence::nextEvent() {
       ev=events[index];
     }
     index++;
-    if(index>=events.size()) return 0; //
+    //if(index>=events.size()) return 0; //
     ev=events[index]; 
   }
   //printf("nota %d  index %ld\n",ev->note->note,index);

@@ -17,6 +17,7 @@ class ChannelCC: public MidiChannel {
   public:
   ChannelCC(MidiChannel *mc, int cc);
   void processEvent(Event *event,snd_seq_event_t *ev);
+  Event *peekNextEvent();
   Event *nextEvent();
   //snd_seq_tick_time_t getTick();
 };
