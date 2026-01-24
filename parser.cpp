@@ -41,8 +41,9 @@ void Parser::init(){
   seq->continueFlag=false;
   table.insert("openOutPort", new Value(new SysFunction(SysFunction::OPENOUT, vector<Value::Type>({Value::STRING}))));
   table.insert("openInPort", new Value(new SysFunction(SysFunction::OPENIN, vector<Value::Type>({Value::STRING}))));
-  table.insert("connectOut", new Value(new SysFunction(SysFunction::CONNECTOUT, vector<Value::Type>({Value::OUTPORT, Value::INTEGER, Value::INTEGER}))));
-  table.insert("connectIn", new Value(new SysFunction(SysFunction::CONNECTIN, vector<Value::Type>({Value::INPORT, Value::INTEGER, Value::INTEGER}))));
+  table.insert("connect", new Value(new SysFunction(SysFunction::CONNECT, vector<Value::Type>({Value::UNDEF, Value::INTEGER, Value::INTEGER}))));
+  table.insert("connectOut", new Value(new SysFunction(SysFunction::CONNECTOUT, vector<Value::Type>({Value::OUTPORT, Value::INTEGER, Value::INTEGER})))); ///
+  table.insert("connectIn", new Value(new SysFunction(SysFunction::CONNECTIN, vector<Value::Type>({Value::INPORT, Value::INTEGER, Value::INTEGER}))));////
   table.insert("tempo",new Value(new SysFunction(SysFunction::TEMPO,vector<Value::Type>({Value::INTEGER}))));
   table.insert("note",new Value(new SysFunction(SysFunction::NOTE, vector<Value::Type>({Value::INTEGER, Value::INTEGER}))));
   table.insert("pad",new Value(new SysFunction(SysFunction::PAD, vector<Value::Type>({Value::STRING, Value::INTEGER}))));
@@ -79,7 +80,8 @@ return duration;
 
 void Parser::checkLimits(int n, int v0, int v1)  {
   if(n<v0 || n>v1) {
-    printError("Number out of limits\n");
+      printf("Error in line %d. ",lex.lineNum()); ///////////
+    ::printError("Number %d out of limits. Must be between %d and %d\n",n,v0,v1);
   }
 }
 
@@ -296,13 +298,6 @@ vector<Event *>  *Parser::parse_sequence() {
     } else if(note=='K') { //CLOCK /////
       char c1=lex.getChar();
       result->push_back(new Event(c1=='1'));
-    } else if(note=='L') { //LFO
-      vector<Value *> v=parseIntegeParameters(3);
-      Event *lfo = new Event(Event::LFO);
-      lfo->Lfo.beats=v[0]->integer;
-      lfo->Lfo.div=v[1]->integer;
-      lfo->Lfo.shape=v[2]->integer;
-      result->push_back(lfo);
     } else if(note=='M') { //midi note
         vector<Value *> v=parseIntegeParameters(1);
 	result->push_back(new Event(new Note(v[0]->integer, 1)));
@@ -318,14 +313,17 @@ vector<Event *>  *Parser::parse_sequence() {
     } else if(note=='S') { 
       lex.expect("(");
       vector<Value *> v=readListOfValues(')');
-      if(v.size()!=4 || v[0]->type!=Value::LABEL||v[1]->type!=Value::LABEL || v[2]->type!=Value::INTEGER || v[3]->type!=Value::INTEGER ) {
-        printError("Error in types\n");
-        v[0]->print();
-        v[1]->print();
-        v[2]->print();
-        v[3]->print();
+      vector<int> values;
+      if(v.size()<3 || v.size()%2==0) {
+        printError("Error in size of list of values of S() (must be odd and > 3)\n");
       }
-      result->push_back(new Event(v[0]->str,v[1]->str,v[2]->integer,v[3]->integer));
+      for(size_t i=0; i<v.size();i++) {
+        if(i%2==0) {
+	  checkLimits(v[i]->integer,0,127);
+	}
+        values.push_back(v[i]->integer);
+      }
+      result->push_back(new Event(values));
     } else if(note=='T') { 
       vector<Value *> v=parseIntegeParameters(2);
       Event *ev=new Event(Event::TIME);
@@ -617,13 +615,18 @@ Value *Parser::execSysFunction(SysFunction *sf) {
     printError("Error in number of parameters\n");
   }
   for(size_t i=0; i<v.size(); i++) {
-    if(v[i]->type!=sf->parameters[i]) {
+    if(v[i]->type!=sf->parameters[i] && sf->parameters[i]!=Value::UNDEF) {
       printError("Error in type of parameter %ld\n",i);
     }
   }
   switch(sf->type) {
     case SysFunction::OPENOUT: return new Value(seq->createOutPort(v[0]->str.c_str()), Value::OUTPORT);
     case SysFunction::OPENIN: return new Value(seq->createInPort(v[0]->str.c_str()), Value::INPORT);
+    case SysFunction::CONNECT: switch(v[0]->type){
+                                 case Value::OUTPORT: seq->connect(true, v[0]->integer,v[1]->integer,v[2]->integer);break;
+                                 case Value::INPORT: seq->connect(false, v[0]->integer,v[1]->integer,v[2]->integer);break;
+				 default: printError("Port expected as first parameter\n");
+				 }; break;
     case SysFunction::CONNECTOUT: seq->connect(true, v[0]->integer,v[1]->integer,v[2]->integer);break;
     case SysFunction::CONNECTIN: seq->connect(false, v[0]->integer,v[1]->integer,v[2]->integer);break;
     case SysFunction::TEMPO: seq->set_tempo(v[0]->integer);break;

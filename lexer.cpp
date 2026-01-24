@@ -74,7 +74,6 @@ char Lexer::getChar() {
   }  else { 
     charNum++;
   }
-  //printf("getchar %c %d\n",c,c);
   return c;
 }
 
@@ -119,7 +118,7 @@ string Lexer::readNumber(char c) {
 string Lexer::readString(char term) {
   char c=getChar();
   string s;
-  while(c!=term && c>=32 && c<=0x7f) {
+  while(c!=term && c>=9 && c<=0x7f) {
     if(c=='\\') {
       char c1=getChar();
       switch(c1) {

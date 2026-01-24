@@ -9,98 +9,69 @@ vc=mc; //////
 cc_ev=new Event(cc,0);
 v1=0;
 v2=0;
-shape=0;
 length=0;
 index=0;
 cc_ev->CC.value=0;
+v_index=0;
 }
 
 Event *ChannelCC::peekNextEvent(){
   if(vc->closed) { 
     closed=true; 
     return 0;
+  } else if(!closed) {
+    if(v_index) {
+      return cc_ev;
+    } else {
+      return ::Channel::peekNextEvent();
+    }
+  } else {
+    return 0;
   }
-  return cc_ev;
+}
+
+void ChannelCC::loadSection(){
+  v1=v2;
+  length=values[v_index++];
+  v2=values[v_index++];
+  index=0;
 }
 
 Event *ChannelCC::nextEvent(){
-  if(vc->closed) { closed=true; return 0;}
-  if(length==0) {
+  //if(vc->closed) { closed=true; return 0;}
+  if(v_index==0) {
     Event *event=::Channel::nextEvent();
     if(!event) return 0;
     if(event->type==Event::SWEEP){
       procesSweep(event);
       return (Event *)1;
-    } else if(event->type==Event::LFO){
-      processLFO(event);
-      return (Event *)1;
     } else {
       return event;
     }
-  } else if (length==MAX_LENGTH) {
-    if(shape==0) {
-      if(v2<=v1/2) {
-        cc_ev->CC.value=0;
-        v2+=incTick(1);
-      } else if(v2<=v1) {
-        cc_ev->CC.value=127;
-        v2+=incTick(1);
-      } else {
-        v2=0;
-      }
-    } else if(shape==1){
-      if(v2<=v1) {
-        cc_ev->CC.value= v2*127/v1;
-        v2+=incTick(1);
-      } else {
-        v2=0;
-      }
-    } else if(shape==2){
-      if(v2<=v1) {
-        if(v2*255/v1<=127) {
-          cc_ev->CC.value= v2*255/v1;
-	} else {
-          cc_ev->CC.value= 255-v2*255/v1;
-	}
-        v2+=incTick(1);
-      } else {
-        v2=0;
-      }
-    }
-
-    return cc_ev; 
-    } else { //SWEEP
+  } else { //SWEEP
       if(v2>v1) {
-        cc_ev->CC.value=v1+(v2-v1)*index/(length-1);
+        cc_ev->CC.value=v1+(v2-v1)*index/length;
       } else {
-        cc_ev->CC.value=v1-(v1-v2)*index/(length-1);
+        cc_ev->CC.value=v1-(v1-v2)*index/length;
       }
       //printf("cc_ev->CC.value %d\n",cc_ev->CC.value);
-    if(index++>=length-1){
-      length=0;
+    if(index++>=length){
+      if(v_index<values.size()) {
+        loadSection();
+      } else {
+	v_index=0;
+      }
     }
-  return cc_ev; 
+    return cc_ev; 
   }
 }
 
 void ChannelCC::procesSweep(Event *event) {
-  string l1=event->sweep.label1;
-  string l2=event->sweep.label2;
-  v1=event->sweep.value1;
-  v2=event->sweep.value2;
-  length=vc->seq.length(l1, l2)*vc->incTick(1)/incTick(1);
-  vc->addWait(l1,this);
-  waiting=true;
-  index=0;
-}
-
-void ChannelCC::processLFO(Event *event) {
-  length=MAX_LENGTH;
-  //waiting=false;
-  v2=0;
-  v1=event->Lfo.beats*TICKS_PER_QUARTER/event->Lfo.div;
-  shape=event->Lfo.shape;
-  //printf("LFO v1 %d shape %d\n",v1,shape);
+  values=event->values;
+  v_index=0;
+  v2=values[v_index++];
+  loadSection();
+  closed=false;
 }
 
 void ChannelCC::sendControlChange(Event *event,snd_seq_event_t *ev){
@@ -115,7 +86,6 @@ void ChannelCC::sendControlChange(Event *event,snd_seq_event_t *ev){
 void ChannelCC::processEvent(Event *event,snd_seq_event_t *ev){
   //printf("processEvent %d\n",event->type);
   switch(event->type) {
-    case Event::LFO: processLFO(event);break;
     case Event::SWEEP:  procesSweep(event);break;
     case Event::CONTROL_CHANGE: sendControlChange(event,ev);break;
     default: MidiChannel::processEvent(event,ev);break;

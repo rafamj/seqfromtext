@@ -51,7 +51,7 @@ Event::Event(Channel *c, string l):Wait(c,l){
   type=WAIT;
 }
 
-Event::Event(string l1, string l2, int v1, int v2):sweep(l1,l2,v1,v2){
+Event::Event(vector <int> v):values(v){
   type=SWEEP;
 }
 

@@ -61,6 +61,7 @@ if(argc!=2) {
   signal(SIGINT, sigterm_exit);
   signal(SIGTERM, sigterm_exit);
   
+  seq.send_sequences();
   if(seq.continueFlag) {
  pthread_t thid;
   void *ret;

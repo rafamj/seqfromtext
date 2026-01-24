@@ -11,7 +11,7 @@
 #include "timechannel.h"
 #include "systemchannel.h"
 
-#define MAX_EVENTS  8 
+#define MAX_EVENTS  24 
 
 
 Sequencer::Sequencer() {
@@ -180,7 +180,7 @@ Channel *Sequencer::selectNextChannel() {
 
 void Sequencer::send_events() {
   int n=0;
-  int result;
+  //int result;
   snd_seq_event_t ev;
   static snd_seq_tick_time_t last_tick=0; 
   Event *event=0;
@@ -217,11 +217,15 @@ void Sequencer::send_events() {
           snd_seq_ev_set_subs(&ev);
           channel->processEvent(event,&ev);
 	  last_tick=max(last_tick,channel->getTick());
+          snd_seq_event_output(seq_handle, &ev);
+	  snd_seq_drain_output(seq_handle);
+	  /*
 	  if ((result = snd_seq_event_output_direct(seq_handle, &ev)) >= 0) {
             //printf("ALSA MIDI write ok:\n");
           } else {
             //printf("ALSA MIDI write error: %s %d\n", snd_strerror(result),result);
           }
+	  */
 	  n++;
 	} else {
           channel->processEvent(event,&ev);
@@ -262,7 +266,7 @@ void Sequencer::midi_action() {
     } else if(ev->type==SND_SEQ_EVENT_CONTROLLER) {
       printf("control change received channel %d %d %d tick %u\n",ev->data.control.channel,ev->data.control.param , ev->data.control.value, ev->time.tick);
     } else if(ev->type==SND_SEQ_EVENT_SYSEX) {
-        printf("SYS EX RECEIVED len %u\n",ev->data.ext.len);
+        //printf("SYS EX RECEIVED len %u\n",ev->data.ext.len);
         if(waitList.size()>0) {
 	  Function *f=waitList[0];
 	  vector<Value *> parameters;
@@ -271,8 +275,8 @@ void Sequencer::midi_action() {
 	  parser->execFunction(f,parameters);
 	  waitList.erase(waitList.begin());
           if(!continueFlag && waitList.size()==0) {
-	    printf("end wait list\n");
-            exit(0);
+	    //printf("end wait list\n");
+            stop();
           }
 	}
     } else if(ev->type==SND_SEQ_EVENT_CLOCK) {
@@ -316,9 +320,8 @@ void Sequencer::loop() {
 
 
 void Sequencer::stop() {
-  printf("\nexit\n");
   clear_queue();
-  sleep(2);
+  //sleep(2);
   snd_seq_stop_queue(seq_handle, queue_id, NULL);
   snd_seq_free_queue(seq_handle, queue_id);
   free(pfd);

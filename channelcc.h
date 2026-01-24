@@ -9,11 +9,12 @@ class ChannelCC: public MidiChannel {
   Event *cc_ev;
   size_t length;
   int v1,v2;
-  int shape; //shape of the LFO wave
+  vector<int> values;
   size_t index=0;
+  size_t v_index;
   void sendControlChange(Event *event, snd_seq_event_t *ev);
-  void procesSweep(Event *event) ;
-  void processLFO(Event *event) ;
+  void procesSweep(Event *event);
+  void loadSection();
   public:
   ChannelCC(MidiChannel *mc, int cc);
   void processEvent(Event *event,snd_seq_event_t *ev);

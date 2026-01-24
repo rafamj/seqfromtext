@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "error.h"
 
-void printError ( const char * fmt, ... ){
+void printError (const char * fmt, ... ){
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);
