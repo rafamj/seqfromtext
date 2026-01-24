@@ -1,7 +1,7 @@
 
 tempo(60)
 seq1=openOutPort("seq1")
-connectOut(seq1,128,0)
+connect(seq1,128,0)
 pianoLeft=channel(seq1,1)
 pianoRight=channel(seq1,1)
 

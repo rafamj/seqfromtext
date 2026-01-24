@@ -3,15 +3,20 @@ Identity request Streichfett
 */
 seq1=openOutPort("seq1")
 seq2=openInPort("seq1")
-connectOut(seq1,20,0)
-connectIn(seq2,20,0)
+connect(seq1,20,0)
+connect(seq2,20,0)
 d1=sysExChannel(seq1)
 
 ID = 0x7F //Disregard ID
 
 d1<</ X( F0 7E <ID>  06 01 f7 ) /
 
-def  ident(buffer,len) = "printf(\"%d ID %x manufacturer %hhX model %hhX main board revision %hhd bootloader revision %hd firmware revision %hd \n\",len, buffer[2], buffer[5], buffer[6], buffer[7], buffer[8], buffer[10])"
+//def  ident(buffer,len) = "printf(\"sysex received length %d %s\n\", len, buffer)"
+
+def  ident(buffer,len) {
+   printf("sysex received length %d %s\n", len, buffer)
+   printf("%d ID %x manufacturer %hhX model %hhX main board revision %hhd bootloader revision %hd firmware revision %hd \n",len, buffer[2], buffer[5], buffer[6], buffer[7], buffer[8], buffer[10])
+}
 
 waitSysEx(seq2, ident)
 

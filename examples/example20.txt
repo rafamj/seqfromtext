@@ -5,13 +5,12 @@ tempo(60)
 d1=channel(seq1,1)
 pan=channelCC(d1,10)
         
-d1<< / :a / + / c d e f g / * 10 + /:b/
+d1<<  / c d e f g / * 10 
 d1<<  /g f e d c / * 10 + /:c/
 
 d1<< / t(2,1) [d f a c^] [ev g b d^]/ * 4
 
 
-pan<< /t(1,8) S(:a,:b,0,127)/  // 8 CC per beat (2 per note)
-pan<< /S(:b,:c,127,0)/
+pan<< /t(1,8) S(0,100,127,100,0) /  // 8 CC per beat (2 per note)
+pan<< / S(0,16,127,16,0) / * 4
 
-pan<< / z l(1,4,0) /  //LFO 4 cycles per beat shape 0 (square wave)

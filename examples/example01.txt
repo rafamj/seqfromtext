@@ -4,7 +4,7 @@
 
 tempo(60)
 seq1=openOutPort("seq1")
-connectOut(seq1,128,0)
+connect(seq1,128,0)
 d1=channel(seq1,1)
 d1<</c d e f g a b c^/
 
