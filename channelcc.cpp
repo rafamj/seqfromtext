@@ -16,10 +16,10 @@ v_index=0;
 }
 
 Event *ChannelCC::peekNextEvent(){
-  if(vc->closed) { 
+  /*if(vc->closed) { 
     closed=true; 
     return 0;
-  } else if(!closed) {
+  } else*/ if(!closed) {
     if(v_index) {
       return cc_ev;
     } else {

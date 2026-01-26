@@ -20,7 +20,7 @@ static int note2midi(char note, int octave, int alt) {
 
 static uint8_t hexString2int(string v) {
   if(v.length()>2) {
-    printError("Number too long, %s\n",v.c_str());
+    printError("Number too long, %s",v.c_str());
   }
   return stoi(v,0,16);
 }
@@ -41,9 +41,9 @@ void Parser::init(){
   seq->continueFlag=false;
   table.insert("openOutPort", new Value(new SysFunction(SysFunction::OPENOUT, vector<Value::Type>({Value::STRING}))));
   table.insert("openInPort", new Value(new SysFunction(SysFunction::OPENIN, vector<Value::Type>({Value::STRING}))));
-  table.insert("connect", new Value(new SysFunction(SysFunction::CONNECT, vector<Value::Type>({Value::UNDEF, Value::INTEGER, Value::INTEGER}))));
-  table.insert("connectOut", new Value(new SysFunction(SysFunction::CONNECTOUT, vector<Value::Type>({Value::OUTPORT, Value::INTEGER, Value::INTEGER})))); ///
-  table.insert("connectIn", new Value(new SysFunction(SysFunction::CONNECTIN, vector<Value::Type>({Value::INPORT, Value::INTEGER, Value::INTEGER}))));////
+  table.insert("connect", new Value(new SysFunction(SysFunction::CONNECT, vector<Value::Type>({Value::UNDEF, Value::UNDEF, Value::INTEGER}))));
+  //table.insert("connectOut", new Value(new SysFunction(SysFunction::CONNECTOUT, vector<Value::Type>({Value::OUTPORT, Value::INTEGER, Value::INTEGER})))); ///
+  //table.insert("connectIn", new Value(new SysFunction(SysFunction::CONNECTIN, vector<Value::Type>({Value::INPORT, Value::INTEGER, Value::INTEGER}))));////
   table.insert("tempo",new Value(new SysFunction(SysFunction::TEMPO,vector<Value::Type>({Value::INTEGER}))));
   table.insert("note",new Value(new SysFunction(SysFunction::NOTE, vector<Value::Type>({Value::INTEGER, Value::INTEGER}))));
   table.insert("pad",new Value(new SysFunction(SysFunction::PAD, vector<Value::Type>({Value::STRING, Value::INTEGER}))));
@@ -80,8 +80,9 @@ return duration;
 
 void Parser::checkLimits(int n, int v0, int v1)  {
   if(n<v0 || n>v1) {
-      printf("Error in line %d. ",lex.lineNum()); ///////////
-    ::printError("Number %d out of limits. Must be between %d and %d\n",n,v0,v1);
+   //   printf("Error in line %d. ",lex.lineNum()); ///////////
+   // ::printError("Number %d out of limits. Must be between %d and %d\n",n,v0,v1);
+   printError("Number %d out of limits. Must be between %d and %d",n,v0,v1);
   }
 }
 
@@ -111,14 +112,14 @@ vector<Value *> Parser::parseIntegeParameters(unsigned int n) {
   vector<Value *> v=readListOfValues(')');
   if(v.size()!=n) {
     if(n!=1) {
-      printError("%d parameters expected\n",n);
+      printError("%d parameters expected",n);
     } else {
-      printError("One parameter expected\n");
+      printError("One parameter expected");
     }
   } else {
     for(size_t i=0; i<v.size();i++) {
       if(v[i]->type!=Value::INTEGER) {
-        printError("Number expected in parameter %d\n",i);
+        printError("Number expected in parameter %d",i);
       }
     }
   }
@@ -139,7 +140,7 @@ vector<uint8_t> Parser::parseSysEx(int base) {
 	    } else if(v[i]->type==Value::STRING) {
 	      buffer.insert(buffer.end(),v[i]->str.begin(),v[i]->str.end());
 	    } else {
-	      printError("Integer expected\n");
+	      printError("Integer expected");
 	    }
           }
 	} else if(base==16 && (t.is(Token::IDENTIFIER) || t.is(Token::NUMBER))) {
@@ -164,7 +165,7 @@ vector<uint8_t> Parser::parseSysEx(int base) {
 	    buffer.push_back(byte);
 	  }
 	} else {
-	  printError("Hex number expected\n");
+	  printError("Hex number expected");
 	}
         t=lex.nextToken();
       }
@@ -181,7 +182,7 @@ vector<int> Parser::parseChord() {
       int midiNote=parseNote(note);
       s.push_back(midiNote);
     } else {
-      printError("Note expected\n");
+      printError("Note expected");
     }
     jumpBlanks();
     c=lex.getChar();
@@ -200,7 +201,6 @@ vector<Event *> *Parser::parseEventValue() {
       lex.newStream(v[i]->str);
       Token t=lex.peekToken(); 
       if(t.is('/')) {
-        //vector<Event *>  *ev=parse_sequence();
 	Value *val=readExpression();
         lex.closeStream();
 	if(val->type==Value::EVENTS) {
@@ -212,7 +212,7 @@ vector<Event *> *Parser::parseEventValue() {
         s->insert(s->end(),ev->begin(),ev->end());
       }
     } else {
-      printError("Value not a sequence\n");
+      printError("Value not a sequence");
     }
   }
   return s; 
@@ -236,13 +236,13 @@ vector<Event *> *Parser::readPattern(string p) {
             result->back()->note->duration++;
 	  }
 	} else {
-          printError("'%c' not found in the Dictionary\n",p[i]);
+          printError("'%c' not found in the Dictionary",p[i]);
 	}
       } else {	
         if(v->type==Value::EVENTS) {
           result->insert(result->end(),v->events->begin(),v->events->end());
 	} else {
-          printError("Events expected\n");
+          printError("Events expected");
 	}
       }
     }
@@ -262,8 +262,17 @@ vector<Event *>  *Parser::parse_sequence() {
     note=toupper(c);
     if(note>='A' && note<='G') {
         char c1=lex.getChar();
-        if(note=='C' && toupper(c1)=='C') {  //Control Change
+        if(note=='B' && toupper(c1)=='K') {  //break loop
+          lex.expect("(");
+          vector<Value *> v=readListOfValues(')');
+          if(v.size()!=1 || v[0]->type!=Value::CHANNEL) {
+	    printError("Channel expected");
+	  }
+	  result->push_back(new Event(v[0]->channel));
+        } else if(note=='C' && toupper(c1)=='C') {  //Control Change
 	  vector<Value *> v=parseIntegeParameters(2);
+	  checkLimits(v[0]->integer,0,127);
+	  checkLimits(v[1]->integer,0,127);
 	  result->push_back(new Event(v[0]->integer,v[1]->integer));
 	} else if(note=='D' && toupper(c1)=='D') {   // SysEx Decimal
           vector<uint8_t> buffer=parseSysEx(10);
@@ -290,7 +299,7 @@ vector<Event *>  *Parser::parse_sequence() {
       vector<Value *> v=readListOfValues(')');
       if(v.size()!=1 || v[0]->type!=Value::FARLABEL) {
         v[0]->print();
-        printError("Error in J parameter\n");
+        printError("Error in J parameter");
       }
         Event *ev= new Event(v[0]->FL.channel,v[0]->FL.label);
 	ev->type=Event::JUMP;
@@ -300,6 +309,7 @@ vector<Event *>  *Parser::parse_sequence() {
       result->push_back(new Event(c1=='1'));
     } else if(note=='M') { //midi note
         vector<Value *> v=parseIntegeParameters(1);
+        checkLimits(v[0]->integer,0,127);
 	result->push_back(new Event(new Note(v[0]->integer, 1)));
     } else if(note=='O') { //Octave
         vector<Value *> v=parseIntegeParameters(1);
@@ -315,7 +325,7 @@ vector<Event *>  *Parser::parse_sequence() {
       vector<Value *> v=readListOfValues(')');
       vector<int> values;
       if(v.size()<3 || v.size()%2==0) {
-        printError("Error in size of list of values of S() (must be odd and > 3)\n");
+        printError("Error in size of list of values of S() (must be odd and > 3)");
       }
       for(size_t i=0; i<v.size();i++) {
         if(i%2==0) {
@@ -329,6 +339,7 @@ vector<Event *>  *Parser::parse_sequence() {
       Event *ev=new Event(Event::TIME);
       ev->TM.numerator=v[0]->integer;
       ev->TM.division=v[1]->integer;
+      if(ev->TM.division==0) printError("Division by zero");
       result->push_back(ev);
     } else if(note=='V') { 
       vector<Value *> v=parseIntegeParameters(1);
@@ -339,7 +350,7 @@ vector<Event *>  *Parser::parse_sequence() {
       vector<Value *> v=readListOfValues(')');
       if(v.size()!=1 || v[0]->type!=Value::FARLABEL) {
         v[0]->print();
-        printError("Error in W parameter\n");
+        printError("Error in W parameter");
       }
       result->push_back(new Event(v[0]->FL.channel,v[0]->FL.label));
     } else if(note=='X') { // SysEx Hex
@@ -389,11 +400,11 @@ vector<Event *>  *Parser::parse_sequence() {
 	if(t.is(Token::IDENTIFIER)) {
           result->push_back(new Event(new Label(t.value)));
 	} else {
-	  printError("Identifier expected\n");
+	  printError("Identifier expected");
 	}
       }
     } else {
-      printError("error reading note %c %d\n",c,c);
+      printError("error reading note %c %d",c,c);
     }
     jumpBlanks();
     c=lex.getChar();
@@ -450,7 +461,7 @@ Value *Parser::multValues(Value *v1, Value *v2) {
   if(v1->type==Value::EVENTS && v2->type==Value::EVENTS){
     return mixNotes(v1,v2);
   } else if(v2->type!=Value::INTEGER) {
-    printError("The second value of a product must be an integer\n");
+    printError("The second value of a product must be an integer");
     return v1;
   }
   int n=v2->integer;
@@ -462,19 +473,19 @@ Value *Parser::multValues(Value *v1, Value *v2) {
     case Value::EVENTS: { vector<Event *> *events=new vector<Event *>;
                           while(n-->0){ events->insert(events->end(),v1->events->begin(),v1->events->end()); }
                           return new Value(events);} break;
-    default: printError("Product not defined for these types\n");return v1; break;
+    default: printError("Product not defined for these types");return v1; break;
   }
 }
 
 Value *Parser::divValues(Value *v1, Value *v2) {
   if(v1->type!=v2->type) {
-    printError("Division of values of different type\n");
+    printError("Division of values of different type");
     printf("%d %d\n",v1->integer,v2->integer);
     return v1;
   }
   switch(v1->type) {
     case Value::INTEGER: if(v2->integer!=0) return new Value(v1->integer/v2->integer); else return 0;break;
-    default: printError("Division not defined for these types\n");return v1; break;
+    default: printError("Division not defined for these types");return v1; break;
   }
 }
 
@@ -495,19 +506,19 @@ Value *Parser::readProduct() {
 
 Value *Parser::subValues(Value *v1, Value *v2) {
   if(v1->type!=v2->type) {
-    printError("Substraction of values of different type\n");
+    printError("Substraction of values of different type");
     return v1;
   }
   switch(v1->type) {
     case Value::INTEGER: return new Value(v1->integer-v2->integer); break;
-    default: printError("Substraction not defined for these types\n");return v1; break;
+    default: printError("Substraction not defined for these types");return v1; break;
   }
 }
 
 
 Value *Parser::sumValues(Value *v1, Value *v2) {
   if(v1->type!=v2->type) {
-    printError("sum of values of different type\n");
+    printError("sum of values of different type");
     printf("%d %d\n",v1->integer,v2->integer);
     return v1;
   }
@@ -515,7 +526,7 @@ Value *Parser::sumValues(Value *v1, Value *v2) {
     case Value::INTEGER: return new Value(v1->integer+v2->integer); break;
     case Value::STRING: return new Value(v1->str + v2->str);break;
     case Value::EVENTS: v1->events->insert(v1->events->end(),v2->events->begin(),v2->events->end());return new Value(v1->events);break;
-    default: printError("Sum not defined for these types\n");return v1; break;
+    default: printError("Sum not defined for these types");return v1; break;
   }
 }
 
@@ -591,8 +602,19 @@ void Parser::execPrintf(vector<Value *> v) {
 	  };
 	  break;
 	case '%': f +=*format;printf(f.c_str());break;
-	default: printError("Error in printf format\n");
+	default: printError("Error in printf format");
       }
+    } else if(*format=='\\') {
+      char c;
+      format++;
+      switch(*format)
+      {
+        case 'n': c='\n';break;
+        case 'r': c='\r';break;
+	case 't': c='\t';break;
+	default: c=*format;break;
+      }
+      printf("%c",c);
     } else {
       printf("%c",*format);
     }
@@ -612,23 +634,29 @@ Value *Parser::execSysFunction(SysFunction *sf) {
     return new Value(string("error"),Value::UNDEF); 
   }
   if(v.size()!=sf->parameters.size()) {
-    printError("Error in number of parameters\n");
+    printError("Error in number of parameters");
   }
   for(size_t i=0; i<v.size(); i++) {
     if(v[i]->type!=sf->parameters[i] && sf->parameters[i]!=Value::UNDEF) {
-      printError("Error in type of parameter %ld\n",i);
+      printError("Error in type of parameter %ld",i);
     }
   }
   switch(sf->type) {
     case SysFunction::OPENOUT: return new Value(seq->createOutPort(v[0]->str.c_str()), Value::OUTPORT);
     case SysFunction::OPENIN: return new Value(seq->createInPort(v[0]->str.c_str()), Value::INPORT);
-    case SysFunction::CONNECT: switch(v[0]->type){
-                                 case Value::OUTPORT: seq->connect(true, v[0]->integer,v[1]->integer,v[2]->integer);break;
-                                 case Value::INPORT: seq->connect(false, v[0]->integer,v[1]->integer,v[2]->integer);break;
-				 default: printError("Port expected as first parameter\n");
-				 }; break;
-    case SysFunction::CONNECTOUT: seq->connect(true, v[0]->integer,v[1]->integer,v[2]->integer);break;
-    case SysFunction::CONNECTIN: seq->connect(false, v[0]->integer,v[1]->integer,v[2]->integer);break;
+    case SysFunction::CONNECT: {
+                                 int client=0;
+				 if(v[1]->type==Value::INTEGER) client=v[1]->integer;
+				 else if(v[1]->type==Value::STRING) client=seq->searchClient(v[1]->str);
+				 else printError("Integer or string types expected");
+				 switch(v[0]->type){
+                                 case Value::OUTPORT: seq->connect(true, v[0]->integer,client,v[2]->integer);break;
+                                 case Value::INPORT: seq->connect(false, v[0]->integer,client,v[2]->integer);break;
+				 default: printError("Port expected as first parameter");
+				 }
+			       };break;
+    //case SysFunction::CONNECTOUT: seq->connect(true, v[0]->integer,v[1]->integer,v[2]->integer);break;
+    //case SysFunction::CONNECTIN: seq->connect(false, v[0]->integer,v[1]->integer,v[2]->integer);break;
     case SysFunction::TEMPO: seq->set_tempo(v[0]->integer);break;
     case SysFunction::NOTE: return new Value(new vector<Event *>(1,new Event(new Note(v[0]->integer,v[1]->integer))));
     case SysFunction::PAD:  { unsigned int l=v[1]->integer;
@@ -707,7 +735,7 @@ Value *Parser::readValue() {
         t=lex.expect(Token::IDENTIFIER);
         return new Value(ch->channel,t.value);
       } else {
-        printError("Channel expected\n");
+        printError("Channel expected");
       }
     } else {
       Value *v=table.search(t.value);
@@ -734,7 +762,7 @@ Value *Parser::readValue() {
 	    } else if(v->type==Value::ARRAY) {
 	      return new Value(v->array.data[index1->integer]);
 	    } else {
-	      printError("Type not indexable\n");
+	      printError("Type not indexable");
 	    }
 	  } else  { // ':'
 	    Value *index2=readExpression();
@@ -749,7 +777,7 @@ Value *Parser::readValue() {
           return v;
 	}
       } else {
-        ::printError("Error in line %d. Unknown identifier %s\n",lex.lineNum(), t.value.c_str());
+        ::printError("Error in line %d. Unknown identifier %s",lex.lineNum(), t.value.c_str());
         return new Value(t.value,Value::UNDEF);
       //printf("no en la tabla %s\n",t.value.c_str());
       }
@@ -762,6 +790,9 @@ vector<string> Parser::readParameters() {
   vector<string> result;
 
   Token t=lex.peekToken();
+  if(t.is(')')) { //empty list
+    lex.consumeToken();
+  }
   while(!t.is(')')) {
     t=lex.nextToken();
     result.push_back(t.value);
@@ -779,7 +810,7 @@ void Parser::readDef() {
     lex.consumeToken();
     parameters=readParameters();
   } else {
-    printError("Parameters expected\n");
+    printError("Parameters expected");
   }
   t=lex.expect("={");
   if(t.is('{')) {
@@ -809,10 +840,10 @@ void Parser::readDef() {
       if(v->type==Value::FUNCTION || v->type==Value::SYS_FUNCTION) {
         table.insert(name,v);
       } else {
-        printError("Error1 in def\n");
+        printError("Error1 in def");
       }
     } else {
-      printError("Error in def\n");
+      printError("Error in def");
     }
   }
 }
@@ -873,7 +904,7 @@ void Parser::parse() {
 	    v2->print();
           }
         } else {
-	  printError("Integer or channel expected\n");
+	  printError("Integer or channel expected");
         }
       }
     }
@@ -883,12 +914,16 @@ void Parser::parse() {
 }
 
 void Parser::printError ( const char * fmt, ... ){
-      printf("Error in line %d. ",lex.lineNum());
+      if(!seq->continueFlag) {
+        printf("Error in line %d. ",lex.lineNum());
+      }
       va_list args;
       va_start(args, fmt);
-      ::printError(fmt, args);
+      vprintf(fmt, args);
       va_end(args);
-
+      if(!seq->continueFlag) {
+        seq->stop();
+      }
 }
 
 Parser::~Parser() {

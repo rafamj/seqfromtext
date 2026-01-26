@@ -2,9 +2,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-//#include <stdio.h>
-//#include <readline/readline.h>
-//#include <readline/history.h>
 #include "error.h"
 #include "lexer.h"
 
@@ -118,7 +115,8 @@ string Lexer::readNumber(char c) {
 string Lexer::readString(char term) {
   char c=getChar();
   string s;
-  while(c!=term && c>=9 && c<=0x7f) {
+  while(c!=term && c>=32 && c<=0x7f) {
+  /*
     if(c=='\\') {
       char c1=getChar();
       switch(c1) {
@@ -128,11 +126,13 @@ string Lexer::readString(char term) {
 	default: c=c1;
       }
     }
+    */
     s = s + c;
     c=getChar();
   }
   if(c!=term) {
-    printError("Unterminated string\n");
+    printf("c %d\n",c);
+    printError("Line %d. Unterminated string \"%s",line,s.c_str());
   }
   return s;
 }
@@ -201,7 +201,7 @@ Token Lexer::nextToken() {
     } else if(isSpecial(c)){
       return Token(Token::SPECIAL,string(1,c));
     } else {
-      printf("line %d token UNKNOWN %c %d\n",line,c,c);
+      printError("line %d token UNKNOWN %c %d",line,c,c);
       return Token(Token::UNKNOWN);
     }
     c=getChar();
@@ -228,8 +228,8 @@ Token Lexer::expect(const char *c) {
       return t;
     }
   }
-  printf("Line %d. One of '%s' expected\n",line,c);
-      t.print();
+  printError("Line %d. One of '%s' expected",line,c);
+      //t.print();
   return t;
 }
 
@@ -237,7 +237,7 @@ Token Lexer::expect(Token::Type ty){
   Token t=nextToken();
 
   if(t.type!=ty) {
-      printError("Error in line %d, %d expected\n",line,ty);
+      printError("Error in line %d, %d expected",line,ty);
   }
   return t;
 

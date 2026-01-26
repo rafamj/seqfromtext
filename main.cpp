@@ -13,6 +13,8 @@
 
 sem_t sem;
 Sequencer seq;
+Sequencer *seqPointer=&seq;
+
 bool exitFlag=false;
 
 void *thread(void *arg) {
@@ -49,8 +51,7 @@ int main(int argc, char *argv[]) {
   
 
 if(argc!=2) {
-    printf("error expected 1 argument\n");
-    exit(0);
+    printError("Expected 1 argument\n");
   }
   Parser p(&seq,argv[1]);
   seq.parser=&p;
@@ -65,10 +66,9 @@ if(argc!=2) {
   if(seq.continueFlag) {
  pthread_t thid;
   void *ret;
-  if (sem_init(&sem, 0, 1) == -1) printError("Error creating semaphore\n");
+  if (sem_init(&sem, 0, 1) == -1) printError("Error creating semaphore");
   if (pthread_create(&thid, NULL, thread, (void *)"thread 1") != 0) {
-    perror("pthread_create() error");
-    exit(1);
+    printError("Error creating thread");
   }
     while(1) {
         char *line=readline (">");
@@ -93,13 +93,13 @@ if(argc!=2) {
   seq.stop();
   exitFlag=true;
   if (pthread_join(thid, &ret) != 0) {
-    perror("pthread_create() error");
-    exit(3);
+    printError("Error ending thread");
   }
 
   } else {
   while(1) {
       seq.loop();
+      usleep(100000);
       seq.send_events();
   }
  }

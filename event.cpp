@@ -51,6 +51,11 @@ Event::Event(Channel *c, string l):Wait(c,l){
   type=WAIT;
 }
 
+Event::Event(Channel *c){
+  channel=c;
+  type=BREAK;
+}
+
 Event::Event(vector <int> v):values(v){
   type=SWEEP;
 }
@@ -72,6 +77,7 @@ bool Event::isQueueEvent(){
 bool Event::isFlowControlEvent(){
   switch(type) {
     case LABEL:
+    case BREAK:
     case LOOP_START:
     case LOOP_END:
     case FIRST_ENDING: return true;

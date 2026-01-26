@@ -84,9 +84,11 @@ Event *Sequence::nextEvent() {
     } else if(ev->type==Event::LABEL) {
       processLabel(ev->label->label,index);
       ev=events[index];
+    } else if(ev->type==Event::BREAK) {
+      ev->channel->seq.breakLoop();
     }
     index++;
-    //if(index>=events.size()) return 0; //
+    if(index>=events.size()) return 0; //
     ev=events[index]; 
   }
   //printf("nota %d  index %ld\n",ev->note->note,index);
@@ -112,6 +114,10 @@ void Sequence::jump(string label){
   } else {    
     num_repeats=-1;
   }
+}
+
+void Sequence::breakLoop(){
+  num_repeats=2;
 }
 
 size_t Sequence::length(string begin, string end){

@@ -20,7 +20,7 @@
 class Event {
   public:
   enum Type {NOTE, LOOP_START, LOOP_END, FIRST_ENDING, PROGRAM_CHANGE, CONTROL_CHANGE, SYSEX, CHORD, SILENCE, VOLUME, TIME, GATE, CLOCKONOFF, CLOCK_TICK,
-             START, STOP, LABEL, WAIT, WAKEUP, JUMP, SWEEP};
+             START, STOP, LABEL, WAIT, WAKEUP, JUMP, SWEEP, BREAK};
   Type type;
   union {
     Note *note;
@@ -43,6 +43,7 @@ class Event {
     Label *label;
     snd_seq_tick_time_t tick; //for WAKEUP
     vector<int> values; //for sweep
+    Channel *channel; //for BREAK
   };
   Event(Note *n);
   Event(Silence *s);
@@ -56,7 +57,7 @@ class Event {
   Event(bool clk):clockOn(clk){type=CLOCKONOFF;}
   Event(Label *l):label(l){type=LABEL;}
   Event(Channel *n, string l); //wait and jump
-  //Event(string l1, string l2, int v1, int v2);
+  Event(Channel *n); //BREAK
   Event(vector <int> v);
   bool isQueueEvent();
   bool isFlowControlEvent();

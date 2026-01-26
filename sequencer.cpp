@@ -11,7 +11,7 @@
 #include "timechannel.h"
 #include "systemchannel.h"
 
-#define MAX_EVENTS  24 
+#define MAX_EVENTS  8 
 
 
 Sequencer::Sequencer() {
@@ -60,6 +60,27 @@ int Sequencer::createInPort(const char *name){
   return port_in_id.size()-1;
 }
 
+int Sequencer::searchClient(string cl) { //ponerlo en sequencer.cpp
+   int status;
+   snd_seq_client_info_t* info;
+
+   snd_seq_client_info_alloca(&info);
+
+   status = snd_seq_get_any_client_info(seq_handle, 0, info);
+
+   while (status >= 0) {
+      int id = snd_seq_client_info_get_client(info);
+      char const* name = snd_seq_client_info_get_name(info);
+      if(strcmp(name,cl.c_str())==0) {
+        //printf("found %s %d\n",name,id);
+	return id;
+      }
+      status = snd_seq_query_next_client(seq_handle, info);
+   }
+   printError("Client %s not found",cl.c_str());   
+   return -1;
+}
+
 void Sequencer::connect(bool out, int local_port, int client, int port) {
     snd_seq_addr_t sender, dest;
     snd_seq_port_subscribe_t *subs;
@@ -84,9 +105,9 @@ void Sequencer::connect(bool out, int local_port, int client, int port) {
     snd_seq_port_subscribe_set_time_real(subs, 1);
     if(snd_seq_subscribe_port(seq_handle, subs)) {
       if(out) {
-        printError("Error connecting to %d:%d\n",client,port);
+        printError("Error connecting to %d:%d",client,port);
       } else {
-        printError("Error connecting from %d:%d\n",client,port);
+        printError("Error connecting from %d:%d",client,port);
       }
     }
 
@@ -195,18 +216,20 @@ void Sequencer::send_events() {
   while(n < MAX_EVENTS-1) {
       Channel *channel=selectNextChannel();
       if(channel==0) {
-	    if(!continueFlag && last_tick < get_tick()) {
+	    if(!continueFlag && last_tick < get_tick() && waitList.size()==0) {
 	      printf("end\n");
 	      stop();
 	    } else {
-              usleep(100000);
+              //usleep(100000);
 	      return;
 	    }
       } else {
         event=channel->nextEvent();
 
-        if(!event) {
-	  printf("ERROR\n");exit(0);
+        if(!event) {  
+	  //It is possible to get !event because the control flow events
+	  //printf("ERROR\n");exit(0);
+	  continue;
         } else if(event==(Event *)1) { //call next event
 	    continue;
 	}
@@ -217,15 +240,15 @@ void Sequencer::send_events() {
           snd_seq_ev_set_subs(&ev);
           channel->processEvent(event,&ev);
 	  last_tick=max(last_tick,channel->getTick());
-          snd_seq_event_output(seq_handle, &ev);
-	  snd_seq_drain_output(seq_handle);
-	  /*
+          //snd_seq_event_output(seq_handle, &ev);
+	  //snd_seq_drain_output(seq_handle);
+	  int result; 
 	  if ((result = snd_seq_event_output_direct(seq_handle, &ev)) >= 0) {
             //printf("ALSA MIDI write ok:\n");
           } else {
-            //printf("ALSA MIDI write error: %s %d\n", snd_strerror(result),result);
+            printf("ALSA MIDI write error: %s %d\n", snd_strerror(result),result);
           }
-	  */
+	  
 	  n++;
 	} else {
           channel->processEvent(event,&ev);
@@ -241,7 +264,7 @@ void Sequencer::send_sequences() {
     if(this->channel[i]->seq.length()==0) {
       printf("channel %ld empty\n",i);
       this->channel[i]->closed=true;
-    } else {
+    } else if (this->channel[i]->closed){
       this->channel[i]->closed=false;
       //this->channel[i]->setTick(get_tick()+1);
       this->channel[i]->setTick(0);
@@ -257,16 +280,23 @@ void Sequencer::midi_action() {
 
   do {
     snd_seq_event_input(seq_handle, &ev);
+
+    if(!ev){ continue;}
+
     if(ev->type==SND_SEQ_EVENT_NOTEON) {
-      printf("note on received channel %d %d tick %u\n",ev->data.note.channel, ev->data.note.note, ev->time.tick);
+      //printf("note on received channel %d note %d tick %u\n",ev->data.note.channel, ev->data.note.note, ev->time.tick);
+    } else if(ev->type==SND_SEQ_EVENT_KEYPRESS) {
+      //printf("keypress received channel %d note %d value %d tick %u\n",ev->data.note.channel, ev->data.note.note, ev->data.note.velocity,ev->time.tick);
     } else if(ev->type==SND_SEQ_EVENT_NOTEOFF) {
-      printf("note off received channel %d %d tick %u\n",ev->data.note.channel,ev->data.note.note, ev->time.tick);
+      //printf("note off received channel %d %d tick %u\n",ev->data.note.channel,ev->data.note.note, ev->time.tick);
     } else if(ev->type==SND_SEQ_EVENT_PGMCHANGE) {
-      printf("program change received channel %d %d tick %u\n",ev->data.control.channel,ev->data.control.param, ev->time.tick);
+      //printf("program change received channel %d %d tick %u\n",ev->data.control.channel,ev->data.control.param, ev->time.tick);
     } else if(ev->type==SND_SEQ_EVENT_CONTROLLER) {
-      printf("control change received channel %d %d %d tick %u\n",ev->data.control.channel,ev->data.control.param , ev->data.control.value, ev->time.tick);
+      //printf("control change received channel %d %d %d tick %u\n",ev->data.control.channel,ev->data.control.param , ev->data.control.value, ev->time.tick);
     } else if(ev->type==SND_SEQ_EVENT_SYSEX) {
-        //printf("SYS EX RECEIVED len %u\n",ev->data.ext.len);
+        printf("SYS EX RECEIVED\n");
+    
+        printf("SYS EX RECEIVED len %u\n",ev->data.ext.len);
         if(waitList.size()>0) {
 	  Function *f=waitList[0];
 	  vector<Value *> parameters;
@@ -279,8 +309,11 @@ void Sequencer::midi_action() {
             stop();
           }
 	}
+
     } else if(ev->type==SND_SEQ_EVENT_CLOCK) {
-        printf("CLOCK tick %u %d %d\n",ev->time.tick,ev->time.time.tv_sec,ev->time.time.tv_nsec);
+        //printf("CLOCK tick %u %d %d\n",ev->time.tick,ev->time.time.tv_sec,ev->time.time.tv_nsec);
+    } else if(ev->type==SND_SEQ_EVENT_SENSING) {
+      //printf("Sensing received\n");
     } else {
         printf("UNKNOWN EVENT RECEIVED %d\n",ev->type);
     }

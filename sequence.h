@@ -24,6 +24,7 @@ class Sequence{
   Event *nextEvent();
   void addWait(string label, Channel *channel);
   void jump(string label);
+  void breakLoop();
   size_t length(){return events.size();}
   size_t length(string begin, string end);
   size_t position(string label);

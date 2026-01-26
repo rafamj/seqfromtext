@@ -25,7 +25,6 @@ class Sequencer {
    vector<int> port_in_id;
    vector<int> port_out_id;
    struct pollfd *pfd;
-   //size_t remainingChannels;
    Channel *selectNextChannel();
    int queueEventsCount();
   public:
@@ -36,6 +35,7 @@ class Sequencer {
    void open_seq(const char * device, const  char *name);
    int createOutPort(const char *name);
    int createInPort(const char *name);
+   int searchClient(string cl);
    void connect(bool out, int port_out, int client, int port);
    void set_tempo(int bpm);
    snd_seq_tick_time_t get_tick();
