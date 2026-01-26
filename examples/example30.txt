@@ -7,8 +7,8 @@ tempo(200)
 seq1=openOutPort("seq1")
 seq2=openInPort("seq1")
 
-connectOut(seq1,128,2) //control port of qtractor
-connectOut(seq1,128,0)
+connect(seq1,128,2) //control port of qtractor
+connect(seq1,128,0)
 connectIn(seq2,128,2)
 
 

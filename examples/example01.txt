@@ -4,7 +4,9 @@
 
 tempo(60)
 seq1=openOutPort("seq1")
-connect(seq1,128,0)
+device="TiMidity"
+//device=128
+connect(seq1,device,0)
 d1=channel(seq1,1)
 d1<</c d e f g a b c^/
 
